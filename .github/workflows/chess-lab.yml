@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: chess-lab
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -69,5 +70,6 @@ jobs:
             echo 'No analysis changes.'
           else
             git commit -m 'chess-lab: analyze PGN with Stockfish'
+            git pull --rebase origin chess-lab
             git push origin HEAD:chess-lab
           fi
