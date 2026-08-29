@@ -7,12 +7,13 @@ on:
       - 'chess-lab/games/**/*.pgn'
       - 'chess-lab/analyze.py'
       - 'chess-lab/requirements.txt'
+      - '.github/workflows/chess-lab.yml'
   workflow_dispatch:
     inputs:
       pgn:
         description: 'PGN path, e.g. chess-lab/games/current.pgn'
         required: true
-        default: 'chess-lab/games/current.pgn'
+        default: 'chess-lab/games/2026-08-28-smith-morra.pgn'
       depth:
         description: 'Stockfish depth'
         required: false
@@ -41,21 +42,20 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "pgn=${{ inputs.pgn }}" >> "$GITHUB_OUTPUT"
-            echo "depth=${{ inputs.depth }}" >> "$GITHUB_OUTPUT"
+            PGN="${{ inputs.pgn }}"
+            DEPTH="${{ inputs.depth }}"
           else
-            PGN=$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^chess-lab/games/.*\.pgn$' | head -n 1)
-            if [ -z "$PGN" ]; then
-              PGN=$(find chess-lab/games -name '*.pgn' -type f | head -n 1)
-            fi
-            echo "pgn=$PGN" >> "$GITHUB_OUTPUT"
-            echo "depth=20" >> "$GITHUB_OUTPUT"
+            PGN=$(find chess-lab/games -name '*.pgn' -type f | sort | tail -n 1)
+            DEPTH=20
           fi
+          test -n "$PGN"
+          test -f "$PGN"
+          echo "pgn=$PGN" >> "$GITHUB_OUTPUT"
+          echo "depth=$DEPTH" >> "$GITHUB_OUTPUT"
       - name: Analyze with Stockfish
         env:
           STOCKFISH_PATH: /usr/games/stockfish
         run: |
-          test -n "${{ steps.select.outputs.pgn }}"
           python chess-lab/analyze.py "${{ steps.select.outputs.pgn }}" \
             --depth "${{ steps.select.outputs.depth }}" \
             --multipv 3 \
